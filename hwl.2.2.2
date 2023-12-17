@@ -1,0 +1,36 @@
+// Program 2: aliveCatProgram.cpp
+#include <iostream>
+#include <csignal>
+#include <cstdlib>
+#include <unistd.h>
+
+using namespace std;
+
+int meowCount = 0;
+
+void handleCatSIGINT(int signum) 
+{
+    cout << "\nTotal number of Cat SIGUSR2 signals received: " << meowCount << endl;
+    exit(EXIT_SUCCESS);
+}
+
+void handleCatSIGUSR2(int signum) 
+{
+    meowCount++;
+}
+
+int main() 
+{
+    signal(SIGINT, handleCatSIGINT);
+    signal(SIGUSR2, handleCatSIGUSR2);
+
+    cout << "I still have 9 lives!!" << endl;
+
+    while (true) 
+    {
+        sleep(5);
+        cout << "I still have 9 lives!!" << endl;
+    }
+
+    return 0;
+}

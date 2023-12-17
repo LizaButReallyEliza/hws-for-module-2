@@ -1,0 +1,52 @@
+// Program: catKill.cpp
+#include <iostream>
+#include <cstdlib>
+#include <unistd.h>
+#include <csignal>
+
+using namespace std;
+
+int main() 
+{
+    pid_t momCatPID = getpid();
+    pid_t kittenPID = fork();
+
+    if (kittenPID == -1)
+    {
+        cerr << "Error birthing a new kitten!" << endl;
+        return EXIT_FAILURE;
+    } 
+    else if (kittenPID == 0) 
+    {
+        cout << "Meow! I am the kitten, and my PID is: " << getpid() << endl;
+
+        // Attempt to kill the parent cat
+        if (kill(momCatPID, SIGKILL) == 0)
+        {
+            cout << "Meow! I killed my parent cat with PID: " << momCatPID << endl;
+        } 
+        else
+        {
+            cerr << "Meow! I couldn't kill my parent cat. I'm still alive!" << endl;
+        }
+    } 
+    else 
+    {
+        cout << "Meow! I am the parent cat with PID: " << getpid() << endl;
+        cout << "Meow! My kitten's PID is: " << kittenPID << endl;
+
+        int status;
+        waitpid(kittenPID, &status, 0);
+
+        if (WIFEXITED(status)) 
+        {
+            cout << "Meow! My kitten exited with status: " << WEXITSTATUS(status) << endl;
+        } 
+        else if (WIFSIGNALED(status)) 
+        {
+            cout << "Meow! My kitten was terminated by signal: " << WTERMSIG(status) << endl;
+        }
+    }
+
+    return 0;
+}

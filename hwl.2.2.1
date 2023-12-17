@@ -1,0 +1,31 @@
+// Program 1: sendSignalToCat.cpp
+#include <iostream>
+#include <csignal>
+#include <cstdlib>
+#include <unistd.h>
+
+using namespace std;
+
+int main(int argc, char* kittens[]) 
+{
+    if (argc != 3) 
+    {
+        cerr << "Usage: " << kittens[0] << " <signal_number> <pid>" << endl;
+        return EXIT_FAILURE;
+    }
+
+    int catSignalNumber = atoi(kittens[1]);
+    pid_t targetCatPID = atoi(kittens[2]);
+
+    if (kill(targetCatPID, catSignalNumber) == -1) 
+    {
+        perror("Error");
+        return EXIT_FAILURE;
+    } 
+    else
+    {
+        cout << "Cat signal " << catSignalNumber << " sent to process with PID " << targetCatPID << endl;
+    }
+
+    return EXIT_SUCCESS;
+}

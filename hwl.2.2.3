@@ -1,0 +1,46 @@
+// Program: catSignalHandler.cpp
+#include <iostream>
+#include <cstdlib>
+#include <csignal>
+#include <unistd.h>
+#include <sys/ucontext.h>
+
+using namespace std;
+
+pid_t senderPID;
+
+void handleSIGUSR1(int signum, siginfo_t* info, void* context) 
+{
+    ucontext_t* ucontext = (ucontext_t*)context;
+
+    senderPID = info->si_pid;
+
+    cout << "Meow! Received SIGUSR1 signal from process with PID: " << senderPID << endl;
+
+    cout << "EIP: " << hex << ucontext->uc_mcontext.gregs[REG_EIP] << dec << endl;
+    cout << "EAX: " << hex << ucontext->uc_mcontext.gregs[REG_EAX] << dec << endl;
+    cout << "EBX: " << hex << ucontext->uc_mcontext.gregs[REG_EBX] << dec << endl;
+}
+
+int main() 
+{
+    struct sigaction sa;
+    sa.sa_sigaction = handleSIGUSR1;
+    sa.sa_flags = SA_SIGINFO;
+
+    if (sigaction(SIGUSR1, &sa, NULL) == -1) 
+    {
+        cerr << "Error registering signal handler for SIGUSR1" << endl;
+        return EXIT_FAILURE;
+    }
+
+    cout << "Meow! My PID is: " << getpid() << endl;
+
+    //sleep for 10 seconds 
+    while (true) 
+    {
+        sleep(10);
+    }
+
+    return 0;
+}
