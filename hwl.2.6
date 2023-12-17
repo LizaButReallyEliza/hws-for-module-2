@@ -1,0 +1,162 @@
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <mutex>
+#include <atomic>
+#include <chrono>
+#include <semaphore.h>
+
+using namespace std;
+
+class SiameseAccount
+{
+public:
+    SiameseAccount() : whiskerBalance(0) {}
+
+    void clawDebit(int pawAmount)
+    {
+        lock_guard<mutex> kittenLock(furMutex);
+        whiskerBalance -= pawAmount;
+    }
+
+    void pawCredit(int pawAmount) 
+    {
+        lock_guard<mutex> kittenLock(furMutex);
+        whiskerBalance += pawAmount;
+    }
+
+    int getWhiskerBalance() const 
+    {
+        return whiskerBalance.load();
+    }
+
+private:
+    mutable mutex furMutex;
+    atomic<int> whiskerBalance;
+};
+
+void performWithSiameseMutex(SiameseAccount& siameseKitty, int numPawTransactions, int pawAmount) 
+{
+    auto startTime = chrono::high_resolution_clock::now();
+
+    vector<thread> kittens;
+    for (int i = 0; i < numPawTransactions; ++i) 
+    {
+        kittens.emplace_back([&]() {
+            siameseKitty.clawDebit(pawAmount);
+            siameseKitty.pawCredit(pawAmount);
+        });
+    }
+
+    for (auto& kitten : kittens) 
+    {
+        kitten.join();
+    }
+
+    auto endTime = chrono::high_resolution_clock::now();
+    chrono::duration<double> duration = endTime - startTime;
+
+    cout << "Using SiameseMutex - Final Whisker Balance: " << siameseKitty.getWhiskerBalance() << endl;
+    cout << "Time taken: " << duration.count() << " seconds" << endl;
+}
+
+class BengalSpinlock
+{
+public:
+    BengalSpinlock() : BengalFlag(ATOMIC_FLAG_INIT) {}
+
+    void BengalLock() 
+    {
+        while (BengalFlag.test_and_set(memory_order_acquire));
+    }
+
+    void BengalUnlock()
+    {
+        BengalFlag.clear(memory_order_release);
+    }
+
+private:
+    atomic_flag BengalFlag;
+};
+
+void performWithBengalSpinlock(SiameseAccount& bengalKitty, int numPawTransactions, int pawAmount)
+{
+    auto startTime = chrono::high_resolution_clock::now();
+
+    vector<thread> kittens;
+    BengalSpinlock bengalSpinlock;
+    for (int i = 0; i < numPawTransactions; ++i) 
+    {
+        kittens.emplace_back([&]() {
+            bengalSpinlock.BengalLock();
+            bengalKitty.clawDebit(pawAmount);
+            bengalKitty.pawCredit(pawAmount);
+            bengalSpinlock.BengalUnlock();
+        });
+    }
+
+    for (auto& kitten : kittens)
+    {
+        kitten.join();
+    }
+
+    auto endTime = chrono::high_resolution_clock::now();
+    chrono::duration<double> duration = endTime - startTime;
+
+    cout << "Using BengalSpinlock - Final Whisker Balance: " << bengalKitty.getWhiskerBalance() << endl;
+    cout << "Time taken: " << duration.count() << " seconds" << endl;
+}
+
+void performWithMaineSemaphore(SiameseAccount& maineCoonKitty, int numPawTransactions, int pawAmount) 
+{
+    auto startTime = chrono::high_resolution_clock::now();
+
+    vector<thread> kittens;
+    sem_t maineSemaphore;
+    sem_init(&maineSemaphore, 0, 1);
+    for (int i = 0; i < numPawTransactions; ++i)
+    {
+        kittens.emplace_back([&]() 
+        {
+            sem_wait(&maineSemaphore);
+            maineCoonKitty.clawDebit(pawAmount);
+            maineCoonKitty.pawCredit(pawAmount);
+            sem_post(&maineSemaphore);
+        });
+    }
+
+    for (auto& kitten : kittens)
+    {
+        kitten.join();
+    }
+
+    sem_destroy(&maineSemaphore);
+
+    auto endTime = chrono::high_resolution_clock::now();
+    chrono::duration<double> duration = endTime - startTime;
+
+    cout << "Using MaineSemaphore - Final Whisker Balance: " << maineCoonKitty.getWhiskerBalance() << endl;
+    cout << "Time taken: " << duration.count() << " seconds" << endl;
+}
+
+int main() 
+{
+    const int numPawTransactions = 1000000;
+    const int pawAmount = 1;
+
+    SiameseAccount siameseKitty;
+    cout << "Cat Bank Simulation" << endl;
+
+    cout << "\nUsing SiameseMutex:" << endl;
+    performWithSiameseMutex(siameseKitty, numPawTransactions, pawAmount);
+
+    SiameseAccount bengalKitty;
+    cout << "\nUsing BengalSpinlock:" << endl;
+    performWithBengalSpinlock(bengalKitty, numPawTransactions, pawAmount);
+
+    SiameseAccount maineCoonKitty;
+    cout << "\nUsing MaineSemaphore:" << endl;
+    performWithMaineSemaphore(maineCoonKitty, numPawTransactions, pawAmount);
+
+    return 0;
+}
