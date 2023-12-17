@@ -1,0 +1,66 @@
+// Program: catPipe.cpp
+#include <iostream>
+#include <cstdlib>
+#include <unistd.h>
+
+using namespace std;
+
+int main()
+{
+    int pipefd[2];
+    
+    if (pipe(pipefd) == -1)
+    {
+        cerr << "Error creating pipe" << endl;
+        return EXIT_FAILURE;
+    }
+
+    pid_t firstKittenPID, secondKittenPID;
+
+    if ((firstKittenPID = fork()) == -1) 
+    {
+        cerr << "Error creating the first kitten!" << endl;
+        return EXIT_FAILURE;
+    }
+    else if (firstKittenPID == 0) 
+    {
+        close(pipefd[0]); 
+
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]); 
+        
+        execlp("echo", "echo", "Meow from the first kitten!", nullptr);
+        cerr << "Error executing command in the first kitten" << endl;
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+     
+        if ((secondKittenPID = fork()) == -1)
+        {
+            cerr << "Error creating the second kitten!" << endl;
+            return EXIT_FAILURE;
+        }
+        else if (secondKittenPID == 0) 
+        {
+            close(pipefd[1]); 
+
+            dup2(pipefd[0], STDIN_FILENO);
+            close(pipefd[0]); 
+
+            execlp("wc", "wc", "-w", nullptr);
+            cerr << "Error executing command in the second kitten" << endl;
+            exit(EXIT_FAILURE);
+        }
+        else 
+        {
+            close(pipefd[0]); 
+            close(pipefd[1]); 
+
+            waitpid(firstKittenPID, NULL, 0);
+            waitpid(secondKittenPID, NULL, 0);
+        }
+    }
+
+    return 0;
+}

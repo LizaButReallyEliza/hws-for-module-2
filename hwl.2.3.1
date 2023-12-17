@@ -1,0 +1,84 @@
+// Program: catPIDExchange.cpp
+#include <iostream>
+#include <cstdlib>
+#include <unistd.h>
+
+using namespace std;
+
+int main() 
+{
+    int channel1[2]; 
+    int channel2[2]; 
+
+    if (pipe(channel1) == -1 || pipe(channel2) == -1) 
+    {
+        cerr << "Error creating pipes" << endl;
+        return EXIT_FAILURE;
+    }
+
+    pid_t firstKittenPID, secondKittenPID;
+
+   
+    if ((firstKittenPID = fork()) == -1)
+    {
+        cerr << "Error creating the first kitten!" << endl;
+        return EXIT_FAILURE;
+    } 
+    else if (firstKittenPID == 0)
+    {
+        close(channel1[1]);
+
+        pid_t parentPID;
+        read(channel1[0], &parentPID, sizeof(parentPID));
+        cout << "Meow! I am the first kitten with PID: " << getpid() << " and my parent is: " << parentPID << endl;
+
+        close(channel2[0]);
+        write(channel2[1], &firstKittenPID, sizeof(firstKittenPID));
+
+        close(channel1[0]);
+        close(channel2[1]);
+
+        exit(EXIT_SUCCESS);
+    } 
+    else 
+    {
+        if ((secondKittenPID = fork()) == -1) 
+        {
+            cerr << "Error creating the second kitten!" << endl;
+            return EXIT_FAILURE;
+        } 
+        else if (secondKittenPID == 0) 
+        {
+            close(channel2[1]); 
+
+            pid_t parentPID;
+            read(channel2[0], &parentPID, sizeof(parentPID));
+            cout << "Meow! I am the second kitten with PID: " << getpid() << " and my parent is: " << parentPID << endl;
+
+            close(channel1[0]); 
+            write(channel1[1], &secondKittenPID, sizeof(secondKittenPID));
+
+            close(channel2[0]);
+            close(channel1[1]);
+
+            exit(EXIT_SUCCESS);
+        } 
+        else
+        {
+            close(channel1[0]); 
+            close(channel2[0]); 
+
+            write(channel1[1], &firstKittenPID, sizeof(firstKittenPID));
+            write(channel2[1], &secondKittenPID, sizeof(secondKittenPID));
+
+            waitpid(firstKittenPID, NULL, 0);
+            waitpid(secondKittenPID, NULL, 0);
+
+            close(channel1[1]);
+            close(channel2[1]);
+        }
+    }
+
+    return 0;
+}
+
