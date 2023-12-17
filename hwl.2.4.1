@@ -1,0 +1,36 @@
+// init.cpp
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+using namespace std;
+
+int main()
+{
+    const int arraySize = 100; 
+    const key_t key = ftok(".", 'A');
+    
+    int shmid = shmget(key, sizeof(int) * arraySize, IPC_CREAT | 0666);
+    if (shmid == -1) 
+    {
+        cerr << "Error" << endl;
+        return EXIT_FAILURE;
+    }
+
+    int* sharedArray = (int*)shmat(shmid, NULL, 0);
+    if ((intptr_t)sharedArray == -1) 
+    {
+        cerr << "Error" << endl;
+        return EXIT_FAILURE;
+    }
+
+    memset(sharedArray, 0, sizeof(int) * arraySize);
+
+    shmdt(sharedArray);
+
+    cout << "successful." << endl;
+
+    return 0;
+}

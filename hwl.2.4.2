@@ -1,0 +1,28 @@
+// destroy.cpp
+#include <iostream>
+#include <cstdlib>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+using namespace std;
+
+int main() {
+    const key_t key = ftok(".", 'A');
+
+    int shmid = shmget(key, 0, 0);
+    if (shmid == -1) 
+    {
+        cerr << "Error" << endl;
+        return EXIT_FAILURE;
+    }
+
+    if (shmctl(shmid, IPC_RMID, NULL) == -1) 
+    {
+        cerr << "Error" << endl;
+        return EXIT_FAILURE;
+    }
+
+    cout << "successful" << endl;
+
+    return 0;
+}

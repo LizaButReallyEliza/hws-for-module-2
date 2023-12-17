@@ -1,0 +1,52 @@
+// set.cpp
+#include <iostream>
+#include <cstdlib>
+#include <cmath>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+using namespace std;
+
+void buildSieve(int* array, int size) 
+{
+    array[0] = array[1] = 1; // 0 and 1 are not prime numbers
+
+    for (int i = 2; i <= sqrt(size); ++i) 
+    {
+        if (array[i] == 0) 
+        {
+            for (int j = i * i; j <= size; j += i) 
+            {
+                array[j] = 1;
+            }
+        }
+    }
+}
+
+int main() 
+{
+    const int arraySize = 100;
+    const key_t key = ftok(".", 'A');
+
+    int shmid = shmget(key, sizeof(int) * arraySize, 0666);
+    if (shmid == -1) 
+    {
+        cerr << "Error" << endl;
+        return EXIT_FAILURE;
+    }
+
+    int* sharedArray = (int*)shmat(shmid, NULL, 0);
+    if ((intptr_t)sharedArray == -1) 
+    {
+        cerr << "Error" << endl;
+        return EXIT_FAILURE;
+    }
+
+    buildSieve(sharedArray, arraySize);
+
+    shmdt(sharedArray);
+
+    cout << "successful" << endl;
+
+    return 0;
+}
