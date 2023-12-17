@@ -1,0 +1,68 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <thread>
+#include <vector>
+#include <mutex>
+
+using namespace std;
+
+mutex fileMutex;
+
+void performOperation(const string& filename, int operand1, int operand2, const string& operation)
+{
+    int result;
+    if (operation == "s")
+    {
+        result = operand1 + operand2;
+    }
+    else if (operation == "m") 
+    {
+        result = operand1 * operand2;
+    }
+    else if (operation == "ss")
+    {
+        result = operand1 * operand1 + operand2 * operand2;
+    }
+
+    stringstream output;
+    output << operand1 << " " << operation << " " << operand2 << " = " << result;
+
+    // Write to file
+    {
+        lock_guard<mutex> lock(fileMutex);
+        ofstream outfile(filename);
+        outfile << output.str() << endl;
+    }
+}
+
+int main()
+{
+    int numOperations;
+    cout << "Enter the number of operations: ";
+    cin >> numOperations;
+
+    vector<thread> threads;
+
+    for (int i = 1; i <= numOperations; ++i) 
+    {
+        int operand1, operand2;
+        string operation, filename;
+        cout << "Enter operation " << i << " (e.g., 1 2 s): ";
+        cin >> operand1 >> operand2 >> operation;
+
+        filename = "out_" + to_string(i);
+
+        threads.emplace_back(performOperation, filename, operand1, operand2, operation);
+    }
+
+    // Wait 
+    for (auto& thread : threads) 
+    {
+        thread.join();
+    }
+
+    cout << "All operations completed." << endl;
+
+    return 0;
+}
