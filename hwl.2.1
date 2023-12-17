@@ -1,0 +1,92 @@
+#include <iostream>
+#include <cstdlib>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+
+using namespace std;
+
+void executeMeow(const char* purr, bool tailWiggle = false, const char* furballRedirect = nullptr) 
+{
+    pid_t kittenID = fork();
+
+    if (kittenID == -1)
+    {
+        cerr << "Error creating a new kitten!" << endl;
+        exit(EXIT_FAILURE);
+    } 
+    else if (kittenID == 0) 
+    {
+       
+        if (furballRedirect)
+        {
+            int catnipDescriptor = open(furballRedirect, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            dup2(catnipDescriptor, STDOUT_FILENO);
+            close(catnipDescriptor);
+        }
+
+        execlp(purr, purr, nullptr);
+        cerr << "Error executing purr: " << purr << endl;
+        exit(EXIT_FAILURE);
+    } else 
+    {
+        if (!tailWiggle) 
+        {
+            int status;
+            waitpid(kittenID, &status, 0);
+        }
+    }
+}
+
+int main() 
+{
+    string catCommand;
+    cout << "Enter cat command: ";
+    getline(cin, catCommand);
+
+
+    size_t foundHiss = catCommand.find("&&");
+    size_t foundPurr = catCommand.find("||");
+    size_t foundFurballSingle = catCommand.find(">");
+    size_t foundFurballDouble = catCommand.find(">>");
+
+    if (foundHiss != string::npos) 
+    {
+        string claw1 = catCommand.substr(0, foundHiss);
+        string claw2 = catCommand.substr(foundHiss + 2);
+        executeMeow(claw1.c_str());
+        executeMeow(claw2.c_str());
+    } 
+    else if (foundPurr != string::npos)
+    {
+        string claw1 = catCommand.substr(0, foundPurr);
+        string claw2 = catCommand.substr(foundPurr + 2);
+        executeMeow(claw1.c_str());
+        int furballStatus;
+        wait(&furballStatus);
+        if (WEXITSTATUS(furballStatus) != 0) 
+        {
+            executeMeow(claw2.c_str());
+        }
+    } 
+    else if (foundFurballSingle != string::npos) 
+    {
+        string claw = catCommand.substr(0, foundFurballSingle);
+        string furballFile = catCommand.substr(foundFurballSingle + 1);
+        executeMeow(claw.c_str(), false, furballFile.c_str());
+    } 
+    else if (foundFurballDouble != string::npos) 
+    {
+        string claw = catCommand.substr(0, foundFurballDouble);
+        string furballFile = catCommand.substr(foundFurballDouble + 2);
+        executeMeow(claw.c_str(), false, furballFile.c_str());
+    } 
+    else
+    {
+        executeMeow(catCommand.c_str());
+    }
+
+    return 0;
+}
+
